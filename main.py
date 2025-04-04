@@ -3,7 +3,7 @@ import openai
 import os
 
 # Set OpenAI API Key
-OPENAI_API_KEY = "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"  # Replace with your actual API key
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 
 # Title
 st.title("Ganit Prakash 🧮")
