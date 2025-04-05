@@ -45,12 +45,10 @@ def solve_math_problem_streamed(prompt):
 # 🖋️ Render Output Nicely
 # ------------------------
 def clean_and_render_math(text):
-    # Fix basic superscripts
     text = re.sub(r'(?<!\^)([a-zA-Z])(\d+)', r'\1^\2', text)
     text = text.replace("sqrt", r"\sqrt").replace("int", r"\int")
     text = re.sub(r"([=><])", r" \1 ", text)
 
-    # Break into parts and render appropriately
     parts = re.split(r"(\$\$.*?\$\$|\$.*?\$)", text, flags=re.DOTALL)
 
     with st.container():
@@ -105,7 +103,6 @@ Use clear LaTeX for all equations, explain the logic behind each step, and inclu
 Problem: {user_input}
 """
 
-        # Display streamed output
         placeholder = st.empty()
         full_text = ""
         with st.spinner("🧠 Solving..."):
@@ -115,10 +112,5 @@ Problem: {user_input}
                 placeholder.empty()
                 with placeholder.container():
                     clean_and_render_math(partial)
-
-        # Display full code as LaTeX copyable
-        st.markdown("#### 📋 Full Solution (Copyable Markdown)")
-        st.code(full_text, language="markdown")
     else:
         st.warning("⚠️ Please enter a math problem first.")
-
