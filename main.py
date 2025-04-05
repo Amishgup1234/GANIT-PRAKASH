@@ -73,7 +73,7 @@ def clean_and_render_math(text):
 # ------------------------
 # 🎨 Streamlit UI Setup
 # ------------------------
-st.set_page_config(page_title="Ganit Prakash - AI Math Solver", layout="centered")
+st.set_page_config(page_title="Math Master - AI Math Solver", layout="centered")
 
 # Hide Streamlit Footer for Mobile
 st.markdown("""
@@ -122,18 +122,12 @@ Problem: {user_input}
 """
 
         placeholder = st.empty()
-        full_text = ""
         with st.spinner("🧠 Solving..."):
             solution_generator = solve_math_problem_streamed(detailed_prompt)
             for partial in solution_generator:
-                full_text = partial
                 placeholder.empty()
                 with placeholder.container():
                     clean_and_render_math(partial)
-
-        # 📜 Optional raw output view
-        with st.expander("🔍 Show raw LaTeX/text output"):
-            st.code(full_text, language="markdown")
 
         # 🔝 Back to top
         st.markdown('<a href="#top" style="font-size:14px;">🔝 Back to Top</a>', unsafe_allow_html=True)
