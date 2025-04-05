@@ -42,13 +42,23 @@ def solve_math_problem_streamed(prompt):
             yield f"❌ Critical Error: {str(inner_e)}"
 
 # ------------------------
-# 🖋️ Render Output Nicely
+# 🖋️ Render Output Nicely with Math Symbols
 # ------------------------
 def clean_and_render_math(text):
-    text = re.sub(r'(?<!\^)([a-zA-Z])(\d+)', r'\1^\2', text)
-    text = text.replace("sqrt", r"\sqrt").replace("int", r"\int")
-    text = re.sub(r"([=><])", r" \1 ", text)
+    replacements = {
+        "sqrt": "√",
+        "int": "∫",
+        "pi": "π",
+        "infty": "∞",
+        "->": "→",
+        "<=": "≤",
+        ">=": "≥",
+    }
 
+    for ascii_key, symbol in replacements.items():
+        text = re.sub(rf"\b{ascii_key}\b", symbol, text)
+
+    # Handle LaTeX + plain text sections
     parts = re.split(r"(\$\$.*?\$\$|\$.*?\$)", text, flags=re.DOTALL)
 
     with st.container():
@@ -73,20 +83,6 @@ st.set_page_config(page_title="Ganit Prakash - AI Math Solver", layout="wide")
 st.title("🧮 Ganit Prakash - AI Math Solver")
 st.write("Enter any math problem below, and get a full notebook-style explanation!")
 
-# 🔎 Example Prompts
-examples = [
-    "Find the area enclosed by the ellipse x^2/a^2 + y^2/b^2 = 1.",
-    "What is the derivative of sin(x^2)?",
-    "Solve the equation 2x^2 + 3x - 5 = 0.",
-    "What is the integral of 1 / (1 + x^2)?",
-    "Find the area between the curve y = 3√x, x=2 to x=4, and the x-axis.",
-]
-
-with st.expander("💡 Example Questions"):
-    for i, example in enumerate(examples):
-        if st.button(f"Example {i+1}: {example}"):
-            st.session_state["user_input"] = example
-
 # ✍ User Input
 user_input = st.text_area("✍ Enter your math problem:", value=st.session_state.get("user_input", ""), height=150)
 
@@ -96,9 +92,10 @@ if st.button("📌 Solve Now"):
         st.markdown("---")
         st.markdown("### ✅ Solution:")
 
-        # Enhance prompt for detailed explanations
+        # Enhanced Prompt for Gemini
         detailed_prompt = f"""You are a helpful and skilled math tutor. Solve the following math problem with a complete, step-by-step explanation.
 Use clear LaTeX for all equations, explain the logic behind each step, and include reasoning like a real human tutor would.
+Use proper math symbols like √, ∫, π, and ∞.
 
 Problem: {user_input}
 """
