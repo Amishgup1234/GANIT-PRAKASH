@@ -17,7 +17,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 # 🚀 Try Initializing Model
 # ------------------------
 try:
-    model = genai.GenerativeModel("gemini-pro")
+    model = genai.GenerativeModel("models/gemini-1.5-pro-latest")  # Using gemini-1.5-pro-latest
 except Exception as e:
     st.error(f"❌ Failed to initialize Gemini model: {e}")
     st.stop()
