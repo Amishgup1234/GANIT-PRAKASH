@@ -1,7 +1,7 @@
-
 import streamlit as st
 import google.generativeai as genai
 import os
+import re
 
 # ------------------------
 # 🔐 Secure API Key Config
@@ -42,6 +42,24 @@ def solve_math_problem_streamed(prompt):
             yield f"❌ Critical Error: {str(inner_e)}"
 
 # ------------------------
+# 🧾 Render Math Notebook Style
+# ------------------------
+def render_math_blocks(text):
+    # Split into LaTeX and plain parts
+    parts = re.split(r"(\$\$.*?\$\$|\$.*?\$)", text, flags=re.DOTALL)
+    
+    for part in parts:
+        part = part.strip()
+        if not part:
+            continue
+        if part.startswith("$$") and part.endswith("$$"):
+            st.latex(part.strip("$$"))
+        elif part.startswith("$") and part.endswith("$"):
+            st.latex(part.strip("$"))
+        else:
+            st.markdown(f"<div style='font-size: 18px; line-height: 1.6;'>{part}</div>", unsafe_allow_html=True)
+
+# ------------------------
 # 🎨 Streamlit Frontend
 # ------------------------
 st.set_page_config(page_title="Ganit Prakash - AI Math Solver", layout="wide")
@@ -53,7 +71,7 @@ examples = [
     "What is the derivative of sin(x^2)?",
     "Solve the equation 2x^2 + 3x - 5 = 0.",
     "What is the integral of 1 / (1 + x^2)?",
-    "How do you find the area of a triangle given 3 sides?",
+    "Find the area enclosed by the ellipse x^2/a^2 + y^2/b^2 = 1.",
 ]
 
 with st.expander("💡 Example Questions"):
@@ -62,20 +80,25 @@ with st.expander("💡 Example Questions"):
             st.session_state["user_input"] = example
 
 # ✍ Input Area
-user_input = st.text_area("✍ Enter your math question:", value=st.session_state.get("user_input", ""))
+user_input = st.text_area("✍ Enter your math question:", value=st.session_state.get("user_input", ""), height=150)
 
 # 📌 Solve Button
 if st.button("📌 Solve Now"):
     if user_input.strip():
+        st.session_state["user_input"] = user_input
         with st.spinner("🤔 Thinking..."):
             st.markdown("---")
-            st.markdown("### ✅ Solution")
             placeholder = st.empty()
             solution_generator = solve_math_problem_streamed(user_input)
-            full_text = ""
+            final_solution = ""
+
             for partial in solution_generator:
-                full_text = partial
-                placeholder.markdown(f"<div style='font-size: 18px; white-space: pre-wrap;'>{partial}</div>", unsafe_allow_html=True)
-            st.code(full_text, language='markdown')
+                final_solution = partial
+                placeholder.markdown("📝 Rendering solution...", unsafe_allow_html=True)
+
+        # Render notebook-style
+        with st.container():
+            st.subheader("🧾 Notebook-style Solution")
+            render_math_blocks(final_solution)
     else:
         st.warning("⚠ Please enter a math question before clicking Solve.")
