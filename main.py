@@ -70,7 +70,7 @@ def clean_and_render_math(text):
 # 🎨 Streamlit UI
 # ------------------------
 st.set_page_config(page_title="Ganit Prakash - AI Math Solver", layout="wide")
-st.title("🧮 Ganit Prakash - AI Math Solver")
+st.title("🧮 Math Master - AI Math Solver")
 st.write("Enter any math problem below, and get a full notebook-style explanation!")
 
 # 🔎 Example Prompts
