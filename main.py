@@ -1,3 +1,4 @@
+
 import streamlit as st
 import google.generativeai as genai
 import os
@@ -74,10 +75,7 @@ if st.button("📌 Solve Now"):
             full_text = ""
             for partial in solution_generator:
                 full_text = partial
-                placeholder.markdown(
-                    f"<div style='font-size: 18px; white-space: pre-wrap;'>{partial}</div>",
-                    unsafe_allow_html=True
-                )
+                placeholder.markdown(f"<div style='font-size: 18px; white-space: pre-wrap;'>{partial}</div>", unsafe_allow_html=True)
             st.code(full_text, language='markdown')
     else:
         st.warning("⚠ Please enter a math question before clicking Solve.")
