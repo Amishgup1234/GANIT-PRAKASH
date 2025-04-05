@@ -1,7 +1,7 @@
+
 import streamlit as st
 import google.generativeai as genai
 import os
-import re
 
 # ------------------------
 # 🔐 Secure API Key Config
@@ -17,7 +17,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 # 🚀 Try Initializing Model
 # ------------------------
 try:
-    model = genai.GenerativeModel("models/gemini-1.5-pro-latest")  # Using gemini-1.5-pro-latest
+    model = genai.GenerativeModel("gemini-2.0-flash")
 except Exception as e:
     st.error(f"❌ Failed to initialize Gemini model: {e}")
     st.stop()
@@ -76,14 +76,6 @@ if st.button("📌 Solve Now"):
             for partial in solution_generator:
                 full_text = partial
                 placeholder.markdown(f"<div style='font-size: 18px; white-space: pre-wrap;'>{partial}</div>", unsafe_allow_html=True)
-
-            # Post-processing to refine display
-            latex_match = re.search(r'\$(.*?)\$', full_text, re.DOTALL)
-            if latex_match:
-              final_answer = latex_match.group(0)
-              st.markdown(f"**Final Answer:** {final_answer}")
-            else:
-              st.code(full_text, language='markdown')
-
+            st.code(full_text, language='markdown')
     else:
         st.warning("⚠ Please enter a math question before clicking Solve.")
