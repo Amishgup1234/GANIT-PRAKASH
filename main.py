@@ -45,6 +45,7 @@ def solve_math_problem_streamed(prompt):
 # 🖋️ Render Output Nicely with Math Symbols
 # ------------------------
 def clean_and_render_math(text):
+    # Replace ASCII math terms with Unicode symbols
     replacements = {
         "sqrt": "√",
         "int": "∫",
@@ -58,7 +59,7 @@ def clean_and_render_math(text):
     for ascii_key, symbol in replacements.items():
         text = re.sub(rf"\b{ascii_key}\b", symbol, text)
 
-    # Handle LaTeX + plain text sections
+    # Handle math blocks
     parts = re.split(r"(\$\$.*?\$\$|\$.*?\$)", text, flags=re.DOTALL)
 
     with st.container():
@@ -82,6 +83,20 @@ def clean_and_render_math(text):
 st.set_page_config(page_title="Ganit Prakash - AI Math Solver", layout="wide")
 st.title("🧮 Ganit Prakash - AI Math Solver")
 st.write("Enter any math problem below, and get a full notebook-style explanation!")
+
+# 🔎 Example Prompts
+examples = [
+    "Find the area enclosed by the ellipse x^2/a^2 + y^2/b^2 = 1.",
+    "What is the derivative of sin(x^2)?",
+    "Solve the equation 2x^2 + 3x - 5 = 0.",
+    "What is the integral of 1 / (1 + x^2)?",
+    "Find the area between the curve y = 3√x, x=2 to x=4, and the x-axis.",
+]
+
+with st.expander("💡 Example Questions"):
+    for i, example in enumerate(examples):
+        if st.button(f"Example {i+1}: {example}"):
+            st.session_state["user_input"] = example
 
 # ✍ User Input
 user_input = st.text_area("✍ Enter your math problem:", value=st.session_state.get("user_input", ""), height=150)
