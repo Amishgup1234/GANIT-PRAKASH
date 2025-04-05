@@ -14,10 +14,10 @@ if not GEMINI_API_KEY:
 genai.configure(api_key=GEMINI_API_KEY)
 
 # ------------------------
-# 🚀 Try Initializing Model
+# 🚀 Initialize Gemini Model
 # ------------------------
 try:
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    model = genai.GenerativeModel("gemini-1.5-pro")
 except Exception as e:
     st.error(f"❌ Failed to initialize Gemini model: {e}")
     st.stop()
@@ -42,36 +42,46 @@ def solve_math_problem_streamed(prompt):
             yield f"❌ Critical Error: {str(inner_e)}"
 
 # ------------------------
-# 🧾 Render Math Notebook Style
+# 🖋️ Render Output Nicely
 # ------------------------
-def render_math_blocks(text):
-    # Split into LaTeX and plain parts
+def clean_and_render_math(text):
+    # Fix basic superscripts
+    text = re.sub(r'(?<!\^)([a-zA-Z])(\d+)', r'\1^\2', text)
+    text = text.replace("sqrt", r"\sqrt").replace("int", r"\int")
+    text = re.sub(r"([=><])", r" \1 ", text)
+
+    # Break into parts and render appropriately
     parts = re.split(r"(\$\$.*?\$\$|\$.*?\$)", text, flags=re.DOTALL)
-    
-    for part in parts:
-        part = part.strip()
-        if not part:
-            continue
-        if part.startswith("$$") and part.endswith("$$"):
-            st.latex(part.strip("$$"))
-        elif part.startswith("$") and part.endswith("$"):
-            st.latex(part.strip("$"))
-        else:
-            st.markdown(f"<div style='font-size: 18px; line-height: 1.6;'>{part}</div>", unsafe_allow_html=True)
+
+    with st.container():
+        for part in parts:
+            part = part.strip()
+            if not part:
+                continue
+            if part.startswith("$$") and part.endswith("$$"):
+                st.latex(part.strip("$$"))
+            elif part.startswith("$") and part.endswith("$"):
+                st.latex(part.strip("$"))
+            else:
+                st.markdown(
+                    f"<div style='font-size: 17px; line-height: 1.7; margin-bottom: 0.5rem;'>{part}</div>",
+                    unsafe_allow_html=True
+                )
 
 # ------------------------
-# 🎨 Streamlit Frontend
+# 🎨 Streamlit UI
 # ------------------------
 st.set_page_config(page_title="Ganit Prakash - AI Math Solver", layout="wide")
 st.title("🧮 Ganit Prakash - AI Math Solver")
-st.write("Enter any math question below, and I'll solve it step-by-step!")
+st.write("Enter any math problem below, and get a full notebook-style explanation!")
 
 # 🔎 Example Prompts
 examples = [
+    "Find the area enclosed by the ellipse x^2/a^2 + y^2/b^2 = 1.",
     "What is the derivative of sin(x^2)?",
     "Solve the equation 2x^2 + 3x - 5 = 0.",
     "What is the integral of 1 / (1 + x^2)?",
-    "Find the area enclosed by the ellipse x^2/a^2 + y^2/b^2 = 1.",
+    "Find the area between the curve y = 3√x, x=2 to x=4, and the x-axis.",
 ]
 
 with st.expander("💡 Example Questions"):
@@ -79,26 +89,36 @@ with st.expander("💡 Example Questions"):
         if st.button(f"Example {i+1}: {example}"):
             st.session_state["user_input"] = example
 
-# ✍ Input Area
-user_input = st.text_area("✍ Enter your math question:", value=st.session_state.get("user_input", ""), height=150)
+# ✍ User Input
+user_input = st.text_area("✍ Enter your math problem:", value=st.session_state.get("user_input", ""), height=150)
 
 # 📌 Solve Button
 if st.button("📌 Solve Now"):
     if user_input.strip():
-        st.session_state["user_input"] = user_input
-        with st.spinner("🤔 Thinking..."):
-            st.markdown("---")
-            placeholder = st.empty()
-            solution_generator = solve_math_problem_streamed(user_input)
-            final_solution = ""
+        st.markdown("---")
+        st.markdown("### ✅ Solution:")
 
+        # Enhance prompt for detailed explanations
+        detailed_prompt = f"""You are a helpful and skilled math tutor. Solve the following math problem with a complete, step-by-step explanation.
+Use clear LaTeX for all equations, explain the logic behind each step, and include reasoning like a real human tutor would.
+
+Problem: {user_input}
+"""
+
+        # Display streamed output
+        placeholder = st.empty()
+        full_text = ""
+        with st.spinner("🧠 Solving..."):
+            solution_generator = solve_math_problem_streamed(detailed_prompt)
             for partial in solution_generator:
-                final_solution = partial
-                placeholder.markdown("📝 Rendering solution...", unsafe_allow_html=True)
+                full_text = partial
+                placeholder.empty()
+                with placeholder.container():
+                    clean_and_render_math(partial)
 
-        # Render notebook-style
-        with st.container():
-            st.subheader("🧾 Notebook-style Solution")
-            render_math_blocks(final_solution)
+        # Display full code as LaTeX copyable
+        st.markdown("#### 📋 Full Solution (Copyable Markdown)")
+        st.code(full_text, language="markdown")
     else:
-        st.warning("⚠ Please enter a math question before clicking Solve.")
+        st.warning("⚠️ Please enter a math problem first.")
+
