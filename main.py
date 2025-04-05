@@ -14,24 +14,46 @@ if not GEMINI_API_KEY:
 genai.configure(api_key=GEMINI_API_KEY)
 
 # ------------------------
-# 🚀 Initialize Gemini Model
+# 🚀 Try Initializing Model
 # ------------------------
 try:
-    model = genai.GenerativeModel("gemini-1.5-pro")
+    model = genai.GenerativeModel("gemini-1.5-pro-latest")
 except Exception as e:
     st.error(f"❌ Failed to initialize Gemini model: {e}")
     st.stop()
 
 # ------------------------
-# 🧠 Solve Math Prompt (Streaming)
+# 🧠 Solve Math Prompt (Streaming + Beautification)
 # ------------------------
+def beautify_math_symbols(text):
+    replacements = [
+        (r"\\sqrt\{([^}]+)\}", r"√(\1)"),
+        (r"sqrt\(([^)]+)\)", r"√(\1)"),
+        (r"int_", r"∫_"),
+        (r"\\int", r"∫"),
+        (r"\\pi", r"π"),
+        (r"\\frac\{([^}]+)\}\{([^}]+)\}", r"(\1⁄\2)"),
+        (r"frac\(([^,]+),([^)]+)\)", r"(\1⁄\2)"),
+        (r"\\theta", r"θ"),
+        (r"\\sin", r"sin"),
+        (r"\\cos", r"cos"),
+        (r"\\pm", r"±"),
+        (r"\\left", ""),
+        (r"\\right", ""),
+        (r"\*\*", r"^")
+    ]
+    for pattern, repl in replacements:
+        text = re.sub(pattern, repl, text)
+    return text
+
 def solve_math_problem_streamed(prompt):
     try:
         response_stream = model.generate_content(prompt, stream=True)
         streamed_text = ""
         for chunk in response_stream:
             if chunk.text:
-                streamed_text += chunk.text
+                clean = beautify_math_symbols(chunk.text)
+                streamed_text += clean
                 yield streamed_text
     except Exception as e:
         try:
@@ -42,55 +64,18 @@ def solve_math_problem_streamed(prompt):
             yield f"❌ Critical Error: {str(inner_e)}"
 
 # ------------------------
-# 🖋️ Render Output Nicely with Math Symbols
-# ------------------------
-def clean_and_render_math(text):
-    # Replace ASCII math terms with Unicode symbols
-    replacements = {
-        "sqrt": "√",
-        "int": "∫",
-        "pi": "π",
-        "infty": "∞",
-        "->": "→",
-        "<=": "≤",
-        ">=": "≥",
-    }
-
-    for ascii_key, symbol in replacements.items():
-        text = re.sub(rf"\b{ascii_key}\b", symbol, text)
-
-    # Handle math blocks
-    parts = re.split(r"(\$\$.*?\$\$|\$.*?\$)", text, flags=re.DOTALL)
-
-    with st.container():
-        for part in parts:
-            part = part.strip()
-            if not part:
-                continue
-            if part.startswith("$$") and part.endswith("$$"):
-                st.latex(part.strip("$$"))
-            elif part.startswith("$") and part.endswith("$"):
-                st.latex(part.strip("$"))
-            else:
-                st.markdown(
-                    f"<div style='font-size: 17px; line-height: 1.7; margin-bottom: 0.5rem;'>{part}</div>",
-                    unsafe_allow_html=True
-                )
-
-# ------------------------
-# 🎨 Streamlit UI
+# 🎨 Streamlit Frontend
 # ------------------------
 st.set_page_config(page_title="Ganit Prakash - AI Math Solver", layout="wide")
 st.title("🧮 Ganit Prakash - AI Math Solver")
-st.write("Enter any math problem below, and get a full notebook-style explanation!")
+st.markdown("Enter any math question below, and get a detailed, step-by-step solution like you'd write in a notebook.")
 
 # 🔎 Example Prompts
 examples = [
-    "Find the area enclosed by the ellipse x^2/a^2 + y^2/b^2 = 1.",
     "What is the derivative of sin(x^2)?",
     "Solve the equation 2x^2 + 3x - 5 = 0.",
     "What is the integral of 1 / (1 + x^2)?",
-    "Find the area between the curve y = 3√x, x=2 to x=4, and the x-axis.",
+    "Find the area enclosed by the ellipse x^2/a^2 + y^2/b^2 = 1.",
 ]
 
 with st.expander("💡 Example Questions"):
@@ -98,31 +83,23 @@ with st.expander("💡 Example Questions"):
         if st.button(f"Example {i+1}: {example}"):
             st.session_state["user_input"] = example
 
-# ✍ User Input
-user_input = st.text_area("✍ Enter your math problem:", value=st.session_state.get("user_input", ""), height=150)
+# ✍ Input Area
+user_input = st.text_area("✍ Enter your math question:", value=st.session_state.get("user_input", ""))
 
 # 📌 Solve Button
 if st.button("📌 Solve Now"):
     if user_input.strip():
-        st.markdown("---")
-        st.markdown("### ✅ Solution:")
-
-        # Enhanced Prompt for Gemini
-        detailed_prompt = f"""You are a helpful and skilled math tutor. Solve the following math problem with a complete, step-by-step explanation.
-Use clear LaTeX for all equations, explain the logic behind each step, and include reasoning like a real human tutor would.
-Use proper math symbols like √, ∫, π, and ∞.
-
-Problem: {user_input}
-"""
-
-        placeholder = st.empty()
-        full_text = ""
-        with st.spinner("🧠 Solving..."):
-            solution_generator = solve_math_problem_streamed(detailed_prompt)
+        with st.spinner("🤔 Solving..."):
+            st.markdown("---")
+            st.markdown("### ✅ Solution")
+            placeholder = st.empty()
+            solution_generator = solve_math_problem_streamed(user_input)
+            full_text = ""
             for partial in solution_generator:
                 full_text = partial
-                placeholder.empty()
-                with placeholder.container():
-                    clean_and_render_math(partial)
+                placeholder.markdown(
+                    f"<div style='font-size: 18px; white-space: pre-wrap; font-family: monospace;'>{partial}</div>",
+                    unsafe_allow_html=True
+                )
     else:
-        st.warning("⚠️ Please enter a math problem first.")
+        st.warning("⚠ Please enter a math question before clicking Solve.")
